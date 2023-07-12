@@ -14,7 +14,7 @@
 
   <name>Digg :: SDG :: Samples :: Förhandsgranskningstjänst</name>
   <description>Sample code for a SDG förhandsgranskningstjänst</description>
-  <url>https://github.org/swedenconnect/sdg-authorization-server</url>
+  <url>https://github.org/swedenconnect/sdg-authorization</url>
 
   <licenses>
     <license>
@@ -25,9 +25,9 @@
   </licenses>
 
     <scm>
-    <connection>scm:git:https://github.com/swedenconnect/sdg-authorization-server.git</connection>
-    <developerConnection>scm:git:https://github.com/swedenconnect/sdg-authorization-server.git</developerConnection>
-    <url>https://github.com/swedenconnect/sdg-authorization-server/tree/master</url>
+    <connection>scm:git:https://github.com/swedenconnect/sdg-authorization.git</connection>
+    <developerConnection>scm:git:https://github.com/swedenconnect/sdg-authorization.git</developerConnection>
+    <url>https://github.com/swedenconnect/sdg-authorization/tree/master</url>
   </scm>
 
   <organization>
@@ -155,8 +155,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
-    <!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-devtools</artifactId> <scope>runtime</scope> </dependency> -->
 
     <!-- We use JUnit 5 and Mockito for our tests -->
     <dependency>
