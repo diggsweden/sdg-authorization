@@ -1,0 +1,39 @@
+server:
+  port: 8446
+  servlet:
+    context-path: /evidence  
+  ssl:
+    enabled: true
+    key-store: classpath:localhost.jks
+    key-store-type: JKS
+    key-alias: localhost
+    key-store-password: secret
+    key-password: secret
+    
+evidence:
+  allowed-clients:
+  - https://localhost:8445/client
+  services:
+  - id: https://evidence1.example.com
+    required-scopes:
+    - read
+  - id: https://evidence2.example.com
+    required-scopes:
+    - read
+  authorization-server:
+    id: https://localhost:8443/as
+    authorization-server-key: classpath:as-key.crt    
+  
+logging:
+  level:
+    com:
+      nimbusds:
+        oauth2: DEBUG
+    se:
+      swedenconnect: DEBUG
+      digg: DEBUG
+    org:
+      springframework:
+        security: DEBUG
+        
+

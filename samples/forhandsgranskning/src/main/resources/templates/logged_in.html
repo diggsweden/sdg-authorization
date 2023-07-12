@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"> 
+<head th:insert="~{fragments/base :: headerFragment}" />
+<body>
+
+  <div th:replace="~{fragments/header :: logotype}"></div>
+  
+  <div class="container main">
+    
+    <div class="row" id="mainDiv">
+      <div class="col-sm-12 content-container">
+
+        <div class="row">
+          <div th:if="${userInfoString == null}" class="col-sm-12 content-heading">
+            <h2 th:text="#{msg.heading-idtoken}">Heading</h2>
+          </div>
+          <div th:if="${userInfoString != null}" class="col-sm-12 content-heading">
+            <h2 th:text="#{msg.heading-idtoken-userinfo}">Heading</h2>
+          </div>          
+          <div class="col-sm-12">
+            <p class="info">
+              <span th:text="#{msg.idtoken-logged-in-as}">Logged in as:</span>
+              <b><span th:text="${userId}">UserID</span></b>.             
+            </p>             
+          </div>
+          <div th:if="${userInfoString == null}" class="col-sm-12">
+            <p class="info" th:text="#{msg.idtoken-text}">Press button</p>
+          </div>
+        </div>
+                
+        <div th:if="${idTokenString != null}" class="row info-intro">
+          <div class="col-sm-12">
+            <p class="info" th:text="#{msg.idtoken.jwt}">ID Token:</p>
+            <div class="sign-message"><pre>
+              <div><span th:text="${idTokenString}">ID Token</span></div></pre>
+            </div>
+          </div>
+        </div>
+        
+        <div th:if="${userInfoString != null}" class="row info-intro">
+          <div class="col-sm-12">
+            <p class="info" th:text="#{msg.userinfo.jwt}">User Info JWT:</p>
+            <div class="sign-message"><pre>
+              <div><span th:text="${userInfoString}">User Info</span></div></pre>
+            </div>
+          </div>
+        </div>
+                
+        <hr class="full-width">
+        
+        <div th:if="${userInfoString == null}" class="col-sm-12 section">        
+          <form method="POST" action="#" th:action="@{/userinfo}">
+            <button id="submitButton" type="submit" class="btn btn-primary">
+              <span th:text="#{msg.userinfo-button}">Get User Info</span>
+            </button>
+          </form>
+        </div>
+        
+        <div th:if="${userInfoString != null}" class="col-sm-12 section">        
+          <form method="POST" action="#" th:action="@{/}">
+            <button id="submitButton" type="submit" class="btn btn-primary">
+              <span th:text="#{msg.continue-button}">Continue</span>
+            </button>
+          </form>
+        </div>
+                
+      </div> <!-- /.col-sm-12 content-container -->
+      
+      <div th:replace="~{fragments/footer :: copyright}"></div>      
+      
+    </div> <!-- /#mainDiv -->
+
+  </div> <!-- /.container main -->
+
+  <th:block th:insert="~{fragments/base :: scriptFragment}"></th:block>
+  
+</body>
+</html>
