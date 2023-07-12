@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"> 
+<head th:insert="~{fragments/base :: headerFragment}" />
+<body>
+
+  <div th:replace="~{fragments/header :: logotype}"></div>
+  
+  <div class="container main">
+    
+    <div class="row" id="mainDiv">
+      <div class="col-sm-12 content-container">
+
+        <div class="row">
+          <div class="col-sm-12 content-heading">
+            <h2 th:text="#{msg.api-result.heading}">Heading</h2>
+          </div>
+          <div class="col-sm-12">
+            <p class="info" th:text="#{msg.api-result.text}" />
+          </div>
+        </div>
+                
+        <div class="row info-intro">
+          <div class="col-sm-12">
+            <div class="sign-message"><pre>
+              <div><span th:text="${result}">Result JSON</span></div></pre>
+            </div>
+          </div>
+        </div>
+                        
+        <hr class="full-width">
+        
+        <div class="col-sm-12 section">
+          <form method="POST" action="#" th:action="@{/}">
+            <button id="submitButton" type="submit" class="btn btn-primary">
+              <span th:text="#{msg.continue-button}">Continue</span>
+            </button>
+          </form>          
+        </div>
+                        
+      </div> <!-- /.col-sm-12 content-container -->
+      
+      <div th:replace="~{fragments/footer :: copyright}"></div>      
+      
+    </div> <!-- /#mainDiv -->
+
+  </div> <!-- /.container main -->
+
+  <th:block th:insert="~{fragments/base :: scriptFragment}"></th:block>
+  
+</body>
+</html>

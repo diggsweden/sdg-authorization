@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"> 
+<head th:insert="~{fragments/base :: headerFragment}" />
+  <script>
+    function setUseCache() {
+      document.getElementById('useCache').value = 'true';
+      document.cc_form.submit();
+    }
+  </script>
+<body>
+
+  <div th:replace="~{fragments/header :: logotype}"></div>
+  
+  <div class="container main">
+    
+    <div class="row" id="mainDiv">
+      
+      <div class="col-sm-12 content-container">
+
+        <div th:if="${loggedInUser == null}" class="row">
+          <div class="col-sm-12 content-heading">
+            <h2 th:text="#{msg.login.heading}">Login using OpenID Connect</h2>
+          </div>
+          <div class="col-sm-12">
+            <p class="info" th:text="#{msg.login.intro}">Login text</p>
+          </div>
+        </div>
+        
+        <div th:if="${loggedInUser != null}" class="row">
+          <div class="col-sm-12">
+            <p class="info">
+              <span th:text="#{msg.logged-in.text}">Logged in as:</span>
+              <b><span th:text="${loggedInUser}">UserID</span></b>
+            </p>            
+          </div>
+        </div>
+        
+        <hr class="full-width">
+        
+        <div th:if="${loggedInUser == null}" class="col-sm-12 section">        
+          <form method="POST" action="#" th:action="@{/login}">
+            <button id="submitButton" type="submit" class="btn btn-primary">
+              <span th:text="#{msg.login.button}">Login</span>
+            </button>
+          </form>
+        </div>
+        <div th:if="${loggedInUser != null}" class="col-sm-12 section">        
+          <form method="POST" action="#" th:action="@{/logout}">
+            <button id="submitButton" type="submit" class="btn btn-primary">
+              <span th:text="#{msg.logout.button}">Logout</span>
+            </button>
+          </form>
+        </div>        
+                        
+      </div> <!-- /.col-sm-12 content-container -->      
+      
+      <div th:if="${loggedInUser != null}" class="col-sm-12 content-container">
+        
+        <div class="row">
+          <div class="col-sm-12 content-heading">
+            <h2 th:text="#{msg.api-call.heading}">Make call to API-service</h2>
+          </div>
+          <div class="col-sm-12">
+            <p class="info" th:text="#{msg.api-call.intro1}">Intro 1</p>
+            <p class="info" th:text="#{msg.api-call.intro2}">Intro 2</p>
+          </div>
+        </div>
+        
+        <hr class="full-width">
+        
+        <div class="col-sm-12 section">
+          <form method="POST" action="#" th:action="@{/authzrequest}">
+            <div class="form-group">
+              <label for="selectApi">Select API-service:</label>
+              <select class="form-control" id="selectApi" name="resourceServer">
+                <option th:each="rs : ${resources}" th:value="${rs.id}" th:text="${rs.name}">Resource</option>
+              </select>
+            </div>
+            <button id="submitButton" type="submit" class="btn btn-primary">
+              <span th:text="#{msg.api-call.button}">Get Access Token</span>
+            </button>
+          </form>
+        </div>
+        
+      </div> <!-- /.col-sm-12 content-container -->
+      
+      <!--
+      <div class="col-sm-12 content-container">
+
+        <div class="row">
+          <div class="col-sm-12 content-heading">
+            <h2 th:text="#{msg.heading}">Heading</h2>
+          </div>
+          <div class="col-sm-12">
+            <p class="info" th:text="#{msg.intro}">Press button</p>
+          </div>
+        </div>
+        
+        <hr class="full-width">
+        
+        <div class="col-sm-12 section">        
+          <form method="POST" action="#" th:action="@{/authzrequest}">
+            <div class="form-group">
+              <label for="userId"><span th:text="#{msg.user-id}">Enter userID</span></label>
+                <input class="form-control" type="text" placeholder="User ID" name="userId" id="userId">
+            </div>            
+            <button id="submitButton" type="submit" class="btn btn-primary">
+              <span th:text="#{msg.test-button}">Test</span>
+            </button>
+          </form>
+        </div>
+                        
+      </div> 
+      
+      -->
+      <!--
+      <div class="col-sm-12 content-container">
+
+        <div class="row">
+          <div class="col-sm-12 content-heading">
+            <h2 th:text="#{msg.heading2}">Heading</h2>
+          </div>
+          <div class="col-sm-12">
+            <p class="info" th:text="#{msg.intro2}">Press button</p>
+          </div>
+        </div>
+        
+        <hr class="full-width">
+                
+        <div class="col-sm-12 section">        
+          <form method="POST" action="#" th:action="@{/test/cc}" name="cc_form">
+            <div class="form-group">
+              <button id="submitButton" type="submit" class="btn btn-primary">
+                <span th:text="#{msg.test-cc-button}">Test</span>
+              </button>
+            </div>
+            <div class="form-group" th:if="${cachedToken != null}">
+              <button id="submitButton" type="submit" class="btn btn-primary" onclick="setUseCache();">
+                <span th:text="#{msg.test-cc-button-cached}">Test</span>
+              </button>
+              <input type="hidden" name="useCache" value="false" id="useCache" />
+            </div>
+          </form>
+        </div>        
+                
+      </div> 
+      -->      
+      
+      <div th:replace="~{fragments/footer :: copyright}"></div>      
+      
+    </div> <!-- /#mainDiv -->
+
+  </div> <!-- /.container main -->
+
+  <th:block th:insert="~{fragments/base :: scriptFragment}"></th:block>
+  
+</body>
+</html>
