@@ -1,5 +1,5 @@
 ![Logo](images/digg.png)
-# SDG Auhtorizaion Usecases
+# SDG Auhtorizaion Sekvens diagram
 ## Bevishämtning
 När en användare i ett svenskt onlineförfarande vill hämta ett digitalt bevis från ett annat eu medlemsland.
 Det svenska online förfarandet begär ett åtkomstintyg för att kunna anropa den svenska vidareförmedlingstjänsten för 
@@ -12,6 +12,7 @@ När en användare via ett utländskt onlineförfarande vill hämta ett digitalt
 Användaren blir omdirigerad till den svenska förhandsgranskningstjänsten som autentiserar användaren och begär ett 
 åtkomstintyg för att anropa bevistjänsten som ska tillhandahålla beviset.
 ### Sekvensdiagram
+```mermaid
 sequenceDiagram
 autonumber
 box Klient
@@ -49,4 +50,5 @@ end
 F->>BT: API request (accesstoken)
 BT->>BT: Validate Access Token
 BT-->>F: API response (protected resource)
+```
 
