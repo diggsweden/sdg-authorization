@@ -21,7 +21,7 @@ evidence:
     required-scopes:
     - read
   authorization-server:
-    id: https://localhost:8443/as
+    id: https://localhost:8443
     authorization-server-key: classpath:as-key.crt    
   
 logging:
