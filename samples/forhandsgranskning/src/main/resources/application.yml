@@ -22,7 +22,7 @@ client:
     type: JKS
   signature-algorithm: ES256  
   authorization-server:
-    id: https://localhost:8443/as
+    id: https://localhost:8443
     authorization-endpoint: ${client.authorization-server.id}/oauth2/authorize
     token-endpoint: ${client.authorization-server.id}/oauth2/token
     user-info-endpoint: ${client.authorization-server.id}/userinfo

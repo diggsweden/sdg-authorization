@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,7 +35,8 @@ import se.oidc.nimbus.claims.ClaimConstants;
 public class TestEvidenceController {
 
   /**
-   * Configuration for the simulated evidence service. Each service is implemented by a controller method.
+   * Configuration for the simulated evidence service. Each service is implemented
+   * by a controller method.
    */
   @Autowired
   @Qualifier("evidenceServices")
@@ -48,7 +50,8 @@ public class TestEvidenceController {
   private List<String> allowedClients;
 
   /**
-   * The verifier that we use to verify the signature on the received access tokens.
+   * The verifier that we use to verify the signature on the received access
+   * tokens.
    */
   @Autowired
   private JWSVerifier jwsVerifier;
@@ -64,14 +67,15 @@ public class TestEvidenceController {
    * Implements the simulated evidence service number 1.
    * 
    * @param httpServletRequest the servlet request
-   * @param personalIdNumber the personal ID number of the user that the service is delivering (simulated) data about
+   * @param personalIdNumber   the personal ID number of the user that the service
+   *                           is delivering (simulated) data about
    * @return an EvidenceResponse structure (simulated)
    * @throws Exception for errors
    */
   @GetMapping(path = "/service1/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
   public EvidenceResponse service1(final HttpServletRequest httpServletRequest,
       @PathVariable("userId") final String personalIdNumber) throws Exception {
-    
+
     final String serviceID = "https://evidence1.example.com";
     final EvidenceService service = this.evidenceServices.stream()
         .filter(s -> s.getId().equals(serviceID))
@@ -84,8 +88,8 @@ public class TestEvidenceController {
 
     // Validate the invocation ...
     //
-    this.validateCall(authorizationHeader, service, personalIdNumber); 
-    
+    this.validateCall(authorizationHeader, service, personalIdNumber, UserIdValidators::validateUserId);
+
     // OK, everything went well, send back a simulated response ...
     //
     return EvidenceResponse.builder()
@@ -93,24 +97,26 @@ public class TestEvidenceController {
         .identity(personalIdNumber)
         .build();
   }
-  
+
   /**
-   * Illustrates all steps that needs to be taken to validate the received access token.
+   * Illustrates all steps that needs to be taken to validate the received access
+   * token.
    * 
-   * @param authorizationHeader the Authorization header (containing the signed access token)
-   * @param service the service configuration
-   * @param userId the user ID for this particular invocation
+   * @param authorizationHeader the Authorization header (containing the signed
+   *                            access token)
+   * @param service             the service configuration
+   * @param userId              the user ID for this particular invocation
    * @throws Exception for errors
    */
   private void validateCall(
       final String authorizationHeader,
       final EvidenceService service,
-      final String userId) throws Exception {
+      final String userId,
+      final BiConsumer<String, SignedJWT> userIdValidator) throws Exception {
 
     // Step 1: Parse the Authorization header into an OAuth2 access token.
     //
-    final AccessToken accessToken =
-        AccessToken.parse(authorizationHeader, AccessTokenType.BEARER);
+    final AccessToken accessToken = AccessToken.parse(authorizationHeader, AccessTokenType.BEARER);
 
     // We only work accept signed JWT:s as access tokens ...
     final SignedJWT accessTokenJwt = SignedJWT.parse(accessToken.getValue());
@@ -137,7 +143,8 @@ public class TestEvidenceController {
           .formatted(this.authorizationServerId, issuer));
     }
 
-    // Step 4. Make sure that we are being invoked by a service that we accept (förhandsgranskningstjänsten).
+    // Step 4. Make sure that we are being invoked by a service that we accept
+    // (förhandsgranskningstjänsten).
     //
     final String clientId = accessTokenJwt.getJWTClaimsSet().getStringClaim("client_id");
     if (!this.allowedClients.contains(clientId)) {
@@ -153,24 +160,20 @@ public class TestEvidenceController {
 
     // Step 6. Assert that at least one of our required scopes are present ...
     //
-    final List<String> scopes =
-        Optional.ofNullable(accessTokenJwt.getJWTClaimsSet().getStringListClaim("scope"))
-            .orElseGet(() -> Collections.emptyList());
+    final List<String> scopes = Optional.ofNullable(accessTokenJwt.getJWTClaimsSet().getStringListClaim("scope"))
+        .orElseGet(() -> Collections.emptyList());
     if (!service.getRequiredScopes().stream().anyMatch(s -> scopes.contains(s))) {
       throw new Exception("Invalid access token - Missing required scope");
     }
 
-    // Step 7. And finally, and very important, make sure that the subject (i.e., the user)
+  
+
+    // Step 7. And finally, and very important, make sure that the subject (i.e.,
+    // the user)
     // for the access token matches the userId that is requested in the call ...
     //
     final String subjectId = this.getUserId(accessTokenJwt.getJWTClaimsSet());
-    if (subjectId == null) {
-      throw new Exception("Invalid access token - Missing ID of subject");
-    }
-    if (!Objects.equals(subjectId, userId)) {
-      throw new Exception("Invalid subject ID (%s) in access token - Required %s".formatted(subjectId, userId));
-    }
-
+    userIdValidator.accept(subjectId, accessTokenJwt);
     // OK, we are done!
   }
 
@@ -187,11 +190,11 @@ public class TestEvidenceController {
   }
 
   // The same as service1 ...
-  // 
+  //
   @GetMapping(path = "/service2/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
   public EvidenceResponse service2(final HttpServletRequest httpServletRequest,
       @PathVariable("userId") final String personalIdNumber) throws Exception {
-    
+
     final String serviceID = "https://evidence2.example.com";
     final EvidenceService service = this.evidenceServices.stream()
         .filter(s -> s.getId().equals(serviceID))
@@ -200,11 +203,26 @@ public class TestEvidenceController {
 
     final String authorizationHeader = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
 
-    this.validateCall(authorizationHeader, service, personalIdNumber); 
-    
+    this.validateCall(authorizationHeader, service, personalIdNumber, UserIdValidators::validateUserId);
+
     return EvidenceResponse.builder()
         .issuer(serviceID)
         .identity(personalIdNumber)
+        .build();
+  }
+
+  @GetMapping(path = "/service3", produces = MediaType.APPLICATION_JSON_VALUE)
+  public EvidenceResponse service3(final HttpServletRequest httpServletRequest) throws Exception {
+    final String authorizationHeader = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
+    final EvidenceService service = this.evidenceServices.stream()
+        .filter(s -> s.getId().equals("https://evidence3.example.com"))
+        .findFirst()
+        .orElseThrow(() -> new Exception("Invalid configuration"));
+
+    validateCall(authorizationHeader, service, null, UserIdValidators::noopValidator);
+    return EvidenceResponse.builder()
+        .issuer("https://evidence3.example.com")
+        .identity("none")
         .build();
   }
 

@@ -1,0 +1,14 @@
+directaccessclient:
+    credential:
+      resource: classpath:keystore.jks
+      alias: rsa
+      password: secret
+      key-password: secret
+      type: JKS
+    authorization-server: https://localhost:8443/oauth2/token
+    client-id: http://direct.test.digg.se
+    development-mode: true
+    requested-scopes:
+    - read
+    - write
+    requested-resource: https://evidence3.example.com

@@ -13,6 +13,7 @@ server:
 evidence:
   allowed-clients:
   - https://localhost:8445/client
+  - http://direct.test.digg.se
   services:
   - id: https://evidence1.example.com
     required-scopes:
@@ -20,8 +21,11 @@ evidence:
   - id: https://evidence2.example.com
     required-scopes:
     - read
+  - id: https://evidence3.example.com
+    required-scopes:
+    - read
   authorization-server:
-    id: https://localhost:8443/as
+    id: https://localhost:8443
     authorization-server-key: classpath:as-key.crt    
   
 logging:
