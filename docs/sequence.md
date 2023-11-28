@@ -34,8 +34,8 @@ att hämta ett bevis via OOTS.
 * Auktorisationstjänsten validerar begäran och kontrollerar att e-tjänsten tillhör en behörig myndighet
 * Auktorisationstjänsten ställer ut ett åtkomstintyg till e-tjänsten
 * E-tjänsten anropar Bevisförmedlingstjänsten och bifogar åtkomstintyget
-* Vidareföremdlingstjänsten validerar att åtkomstintyget är signerat av betrodd auktorisationstjänst
-* Vidareförmedlingstjänsten gör en bevisbegäran via OOTS SE
+* Bevisförmedlingstjänsten validerar att åtkomstintyget är signerat av betrodd auktorisationstjänst
+* Bevisförmedlingstjänsten gör en bevisbegäran via OOTS SE
 
 
 #### Detaljerat flöde
@@ -47,13 +47,16 @@ box Klient
 participant W as Webläsare
 participant OF as e-tjänst
 end
-box SDG auktorisation
+box SDG OOTS
 participant AT as Auktorisationstjänst
-end
+
 participant BT as Bevisförmedlingstjänsten 
 participant OTSE as OOTS SE
+end
+box Annat medlemsland
 participant OTMS as OOTS MS
-participant MSOF as Förhandsgranskning MS
+participant MSOF as Förhandsgranskning ML
+end
 W->>OF: Begär bevis
 Note right of OF: Authentisering & auktorisation
 OF->>AT: Access Token Request
@@ -64,11 +67,13 @@ AT-->OF: Access Token Grant (accesstoken)
 end
 OF->>BT: API request (accesstoken)
 BT->>BT: Validate Access Token
-BT->>OT: Bevisbegäran
-OT->>BT: Svar på bevisbegäran
+BT->>OTSE: Bevisbegäran
+OTSE->>OTMS: Bevisbegäran
+OTMS->>OTSE: Svar på bevisbegäran
+OTSE->>BT: Svar på bevisbegäran
 BT-->>OF: Svar på bevisbegäran
-OF->>W: Omdirigering till Förhandsgranskning MS
-W-->>MSOF: omdiringering
+OF->>W: Omdirigering till Förhandsgranskning ML
+W-->>MSOF: omdirigering
 ```
 *Diagram 1: Sekvensdiagram över auktorisationsflödet vid bevishämtning*
 
