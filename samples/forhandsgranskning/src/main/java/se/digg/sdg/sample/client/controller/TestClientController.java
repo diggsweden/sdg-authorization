@@ -1,6 +1,9 @@
 package se.digg.sdg.sample.client.controller;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.Provider;
 import java.security.SignatureException;
 import java.util.Collections;
@@ -26,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.jwk.JWK;
@@ -39,6 +43,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.AuthorizationResponse;
 import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
+import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.Scope;
@@ -348,17 +353,26 @@ public class TestClientController {
     // Save this in the session for use when we make the token request ...
     //
     session.setAttribute(CURRENT_AUTHZ_REQUEST_SESSION_NAME, new CurrentAuthorizationRequest(evidenceService, scope));
+    URI resource = new URI(resourceServer);
 
     // OK, before we rush ahead and build an Authorization Request we check if we have a refresh token
     // that we can use. By sending a token request and including a "refresh token grant" we can re-use
     // the user's authorization at the AS - This is much simpler...
     //
-    final RefreshToken refreshToken = (RefreshToken) session.getAttribute(REFRESH_TOKEN_SESSION_NAME);
-    if (refreshToken != null) {
-      final RefreshTokenGrant tokenGrant = new RefreshTokenGrant(refreshToken);
-      return this.sendTokenRequest(httpRequest, tokenGrant);
+    final CurrentAuthorizationRequest currentAuthzRequest = (CurrentAuthorizationRequest) session.getAttribute(CURRENT_AUTHZ_REQUEST_SESSION_NAME);
+    if (currentAuthzRequest == null) {
+      throw new IllegalStateException("Session error");
     }
 
+    // We use existing refresh token if it exists, orElse, we create a new authorization request
+    URI evidenceServiceUri = new URI(currentAuthzRequest.getEvidenceService().getId());
+    return Optional.ofNullable(session.getAttribute(REFRESH_TOKEN_SESSION_NAME))
+      .map(RefreshToken.class::cast).map(RefreshTokenGrant::new)
+      .map(grant -> this.sendTokenRequest(httpRequest, grant, evidenceServiceUri, currentAuthzRequest))
+      .orElseGet(() -> sendAuthorizationRequest(resourceServer, session, scope, resource));
+  }
+
+  private ModelAndView sendAuthorizationRequest(final String resourceServer, final HttpSession session, final Scope scope, URI resourceUri) {
     // OK, put an authentication request together ...
     //
 
@@ -381,7 +395,7 @@ public class TestClientController {
             .redirectionURI(this.authzRedirectUri)
             .endpointURI(this.authorizationServer.getAuthorizationEndpointUri())
             .scope(scope)
-            .resource(new URI(resourceServer))
+            .resource(resourceUri)
             .codeChallenge(codeVerifier, CodeChallengeMethod.S256)
             .build();
 
@@ -527,10 +541,13 @@ public class TestClientController {
     }
     session.removeAttribute(PKCE_CODEVERIFIER_SESSION_NAME);
 
-    final AuthorizationCodeGrant codeGrant = new AuthorizationCodeGrant(
-        authorizationCode, authorizationResponse.getRedirectionURI(), codeVerifier);
-
-    return this.sendTokenRequest(httpRequest, codeGrant);
+    final AuthorizationCodeGrant codeGrant = new AuthorizationCodeGrant(authorizationCode, authorizationResponse.getRedirectionURI(), codeVerifier);
+    final CurrentAuthorizationRequest currentAuthzRequest = (CurrentAuthorizationRequest) session.getAttribute(CURRENT_AUTHZ_REQUEST_SESSION_NAME);
+    if (currentAuthzRequest == null) {
+      throw new IllegalStateException("Session error");
+    }
+    URI evidenceServiceUri = new URI(currentAuthzRequest.getEvidenceService().getId());
+    return this.sendTokenRequest(httpRequest, codeGrant, evidenceServiceUri, currentAuthzRequest);
   }
 
   /**
@@ -541,71 +558,76 @@ public class TestClientController {
    * @return a view that presents the access token
    * @throws Exception for processing errors
    */
-  private ModelAndView sendTokenRequest(final HttpServletRequest httpRequest,
-      final AuthorizationGrant authorizationGrant) throws Exception {
+  private ModelAndView sendTokenRequest(final HttpServletRequest httpRequest, final AuthorizationGrant authorizationGrant, URI evidenceServiceUri, CurrentAuthorizationRequest currentAuthzRequest) {
 
     final HttpSession session = httpRequest.getSession();
 
     // We authenticate using the "private_key_jwt" method ...
     //
-    final ClientAuthentication clientAuthentication =
-        new PrivateKeyJWT(
-            new JWTAuthenticationClaimsSet(
-                this.clientId, new Audience(this.authorizationServer.getTokenEndpointUri())),
-            (JWSAlgorithm) this.clientJwk.getAlgorithm(),
-            this.clientCredential.getPrivateKey(),
-            this.clientJwk.getKeyID(),
-            null, null, (Provider) null);
-
+    ClientAuthentication clientAuthentication = createClientAuthentication();
     // We put together the token request message.
     // Note that we add one extra (custom) parameter, the "client_id". This parameter is required by
     // our OAuth2 profile.
     //
-    final CurrentAuthorizationRequest currentAuthzRequest =
-        (CurrentAuthorizationRequest) session.getAttribute(CURRENT_AUTHZ_REQUEST_SESSION_NAME);
-    if (currentAuthzRequest == null) {
-      throw new Exception("Session error");
-    }
+    
     session.removeAttribute(CURRENT_AUTHZ_REQUEST_SESSION_NAME);
-
     final TokenRequest tokenRequest = new TokenRequest(this.authorizationServer.getTokenEndpointUri(),
         clientAuthentication, authorizationGrant, currentAuthzRequest.getScope(),
-        List.of(new URI(currentAuthzRequest.getEvidenceService().getId())),
+        List.of(evidenceServiceUri),
         Collections.singletonMap("client_id", List.of(this.clientId.getValue())));
 
     // OK, send and receive the token response ...
     //
     final HTTPRequest httpTokenRequest = tokenRequest.toHTTPRequest();
     this.httpRequestConfigurator.configure(httpTokenRequest);
+    try {
+      final HTTPResponse httpResponse = httpTokenRequest.send();
 
-    final HTTPResponse httpResponse = httpTokenRequest.send();
+      // Parse the response ...
+      //
+      final TokenResponse response = TokenResponse.parse(httpResponse);
+      if (!response.indicatesSuccess()) {
+        throw new OAuth2ResponseException(response.toErrorResponse().getErrorObject());
+      }
+      final AccessTokenResponse tokenResponse = response.toSuccessResponse();
 
-    // Parse the response ...
-    //
-    final TokenResponse response = TokenResponse.parse(httpResponse);
-    if (!response.indicatesSuccess()) {
-      throw new OAuth2ResponseException(response.toErrorResponse().getErrorObject());
+      final AccessToken accessToken = tokenResponse.getTokens().getAccessToken();
+      final JWT accessTokenJwt = SignedJWT.parse(accessToken.getValue());
+
+      log.info("access-token: {}", accessToken.toJSONString());
+
+      // Save the access and refresh tokens in the session for later use ...
+      //
+      session.setAttribute(RESOURCE_ACCESS_TOKEN_SESSION_NAME, new SessionAccessToken(accessToken));
+
+      final RefreshToken refreshToken = tokenResponse.getTokens().getRefreshToken();
+      session.setAttribute(REFRESH_TOKEN_SESSION_NAME, refreshToken);
+
+      final ModelAndView mav = new ModelAndView("make_api_call");
+      mav.addObject("accessToken", DisplayUtils.toJsonDisplayString(accessTokenJwt));
+      mav.addObject("authorizationHeader", accessToken.toAuthorizationHeader());
+      mav.addObject("evidenceService", currentAuthzRequest.getEvidenceService());
+      mav.addObject("userId", TokenSupport.findUserId(accessTokenJwt));
+      return mav;
+    } catch (IOException e) {
+      throw new UncheckedIOException("Failed to read response from token request" ,e);
+    } catch (ParseException | java.text.ParseException e) {
+      throw new IllegalStateException("Failed to parse token response", e);
     }
-    final AccessTokenResponse tokenResponse = response.toSuccessResponse();
+  }
 
-    final AccessToken accessToken = tokenResponse.getTokens().getAccessToken();
-    final JWT accessTokenJwt = SignedJWT.parse(accessToken.getValue());
-
-    log.info("access-token: {}", accessToken.toJSONString());
-
-    // Save the access and refresh tokens in the session for later use ...
-    //
-    session.setAttribute(RESOURCE_ACCESS_TOKEN_SESSION_NAME, new SessionAccessToken(accessToken));
-
-    final RefreshToken refreshToken = tokenResponse.getTokens().getRefreshToken();
-    session.setAttribute(REFRESH_TOKEN_SESSION_NAME, refreshToken);
-
-    final ModelAndView mav = new ModelAndView("make_api_call");
-    mav.addObject("accessToken", DisplayUtils.toJsonDisplayString(accessTokenJwt));
-    mav.addObject("authorizationHeader", accessToken.toAuthorizationHeader());
-    mav.addObject("evidenceService", currentAuthzRequest.getEvidenceService());
-    mav.addObject("userId", TokenSupport.findUserId(accessTokenJwt));
-    return mav;
+  private ClientAuthentication createClientAuthentication() {
+    try {
+      return new PrivateKeyJWT(
+              new JWTAuthenticationClaimsSet(
+                  this.clientId, new Audience(this.authorizationServer.getTokenEndpointUri())),
+              (JWSAlgorithm) this.clientJwk.getAlgorithm(),
+              this.clientCredential.getPrivateKey(),
+              this.clientJwk.getKeyID(),
+              null, null, (Provider) null);
+    } catch (JOSEException e) {
+      throw new IllegalArgumentException(e);
+    }
   }
 
   /**

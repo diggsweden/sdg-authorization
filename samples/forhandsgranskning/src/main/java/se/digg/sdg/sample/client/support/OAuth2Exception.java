@@ -5,7 +5,7 @@ package se.digg.sdg.sample.client.support;
  * 
  * @author Martin Lindström
  */
-public abstract class OAuth2Exception extends Exception {
+public abstract class OAuth2Exception extends RuntimeException {
 
   private static final long serialVersionUID = -9052524759337212673L;
 
