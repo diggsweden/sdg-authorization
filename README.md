@@ -1,4 +1,4 @@
-![Logo](../docs/images/digg.png)
+![Logo](docs/images/digg.png)
 
 # OAuth2 and OpenID Connect Samples
 
