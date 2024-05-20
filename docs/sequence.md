@@ -4,7 +4,7 @@
 
 ## Auktorisationsflöden
 
-* Bevishämtning, svenskt onlinfeförarande hämtar bevis från annat medlemsland
+* Bevishämtning, svenskt online-förarande hämtar bevis från annat medlemsland
 ```mermaid
 flowchart LR
     OLF(Onlineförfarande)-->AT(SDG Auktorisationstjänst)
@@ -13,7 +13,7 @@ flowchart LR
     OSE-->OMS(OOTS-nod MS)
 ```
 
-* Bevisförmedling, utländskt onlinteförfarande hämtar bevis fråån Sverige
+* Bevisförmedling, utländskt online-förfarande hämtar bevis från Sverige
 ```mermaid
 flowchart LR
     FGT(Förhandsgranskningstjänsten)-->AT(SDG Auktorisationstjänst)
@@ -25,8 +25,8 @@ flowchart LR
 
 #### Beskrivning
 
-När en användare i ett svenskt onlineförfarande vill hämta ett digitalt bevis från ett annat medlemsland.
-Ett svenskt onlineförfarand begär ett åtkomstintyg för att kunna anropa den svenska bevisförmedlingstjänsten för 
+När en användare i ett svenskt online-förfarande vill hämta ett digitalt bevis från ett annat medlemsland.
+Ett svenskt online-förfarand begär ett åtkomstintyg för att kunna anropa den svenska bevisförmedlingstjänsten för 
 att hämta ett bevis via OOTS.
 
 #### Flödesbeskrivning
@@ -83,13 +83,14 @@ W-->>MSOF: omdirigering
 ##### Åtkomstbegäran
 
 Datamängd
+
 * iss - id på klienten som skapar intyget
 * sub - id på klienten som skapar intyget
 * aud - url till auktorisationstjänsten
 * iat - tidpunkt när intyget skapades
 * exp - giltighetstid för intyget
 * jti - unik identiferare för detta intyg
-*Samt en signatur av intyget
+* Samt en signatur av intyget
 
 Se specifikation för ytterligare och mer detaljerad beskrivning: https://docs.swedenconnect.se/technical-framework/sdg/sdg-oauth2-profile.html#client-authentication
 
@@ -98,7 +99,7 @@ Se specifikation för ytterligare och mer detaljerad beskrivning: https://docs.s
 Datamängd
 * iss - utgivaren av intyget, i detta fall auktorisationstjänsten
 * exp - giltigthetstid för intyget  
-* aud - mottagaren av intyget, i detta fall anropande klient
+* aud - mottagaren av intyget, i den resurstjänst som efterfrågas
 * sub - identitet på resursägaren, i detta fall personnummer på inloggad användare
 * client_id - identitet på klienten
 * scope - omfattning av intygets användningsområde
@@ -173,7 +174,12 @@ BT-->>F: API-svar: protected resource
 
 #### Informationsobjekt vid bevisförmedling
 
-##### Autentiseringsbegäran (Authn Request) och Identitetsintyg (Authn response)
+##### Autentiseringsbegäran (Authn Request)
+
+Se specifikation för beskrivning:
+https://docs.swedenconnect.se/technical-framework/latest/02_-_Deployment_Profile_for_the_Swedish_eID_Framework.html
+
+##### Identitetsintyg (Authn response)
 
 Datamängd
 * sn (Surname) - efternamn
@@ -213,7 +219,7 @@ Se specifikation för ytterligare och mer detaljerad beskrivning: https://docs.s
 Datamängd
 * iss - utgivaren av intyget, i detta fall auktorisationstjänsten
 * exp - giltigthetstid för intyget  
-* aud - mottagaren av intyget, i detta fall anropande klient
+* aud - mottagaren av intyget, i den resurstjänst som efterfrågas
 * sub - identitet på resursägaren, i detta fall personnummer på inloggad användare
 * client_id - identitet på klienten
 * scope - omfattning av intygets användningsområde
