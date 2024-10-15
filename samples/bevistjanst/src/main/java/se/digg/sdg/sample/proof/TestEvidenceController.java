@@ -76,9 +76,9 @@ public class TestEvidenceController {
   public EvidenceResponse service1(final HttpServletRequest httpServletRequest,
       @PathVariable("userId") final String personalIdNumber) throws Exception {
 
-    final String serviceID = "https://evidence1.example.com";
+    final String serviceID = "1";
     final EvidenceService service = this.evidenceServices.stream()
-        .filter(s -> s.getId().equals(serviceID))
+        .filter(s -> s.getId().contains(serviceID))
         .findFirst()
         .orElseThrow(() -> new Exception("Invalid configuration"));
 
@@ -93,7 +93,7 @@ public class TestEvidenceController {
     // OK, everything went well, send back a simulated response ...
     //
     return EvidenceResponse.builder()
-        .issuer(serviceID)
+        .issuer(service.getId())
         .identity(personalIdNumber)
         .build();
   }
@@ -195,9 +195,9 @@ public class TestEvidenceController {
   public EvidenceResponse service2(final HttpServletRequest httpServletRequest,
       @PathVariable("userId") final String personalIdNumber) throws Exception {
 
-    final String serviceID = "https://evidence2.example.com";
+    final String serviceID = "2";
     final EvidenceService service = this.evidenceServices.stream()
-        .filter(s -> s.getId().equals(serviceID))
+        .filter(s -> s.getId().contains(serviceID))
         .findFirst()
         .orElseThrow(() -> new Exception("Invalid configuration"));
 
@@ -206,7 +206,7 @@ public class TestEvidenceController {
     this.validateCall(authorizationHeader, service, personalIdNumber, UserIdValidators::validateUserId);
 
     return EvidenceResponse.builder()
-        .issuer(serviceID)
+        .issuer(service.getId())
         .identity(personalIdNumber)
         .build();
   }
@@ -215,13 +215,13 @@ public class TestEvidenceController {
   public EvidenceResponse service3(final HttpServletRequest httpServletRequest) throws Exception {
     final String authorizationHeader = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
     final EvidenceService service = this.evidenceServices.stream()
-        .filter(s -> s.getId().equals("https://evidence3.example.com"))
+        .filter(s -> s.getId().contains("3"))
         .findFirst()
         .orElseThrow(() -> new Exception("Invalid configuration"));
 
     validateCall(authorizationHeader, service, null, UserIdValidators::noopValidator);
     return EvidenceResponse.builder()
-        .issuer("https://evidence3.example.com")
+        .issuer(service.getId())
         .identity("none")
         .build();
   }
