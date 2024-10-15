@@ -172,20 +172,24 @@ public class TestClientConfigurationProperties implements InitializingBean {
     final PkiCredential clientCredential = this.createPkiCredential();
     try {
       if ("RSA".equals(clientCredential.getPublicKey().getAlgorithm())) {
-        return new RSAKey.Builder(RSAPublicKey.class.cast(clientCredential.getPublicKey()))
+        RSAKey rsaKey = new RSAKey.Builder(RSAPublicKey.class.cast(clientCredential.getPublicKey()))
             .privateKey(clientCredential.getPrivateKey())
             .keyIDFromThumbprint()
             .algorithm(JWSAlgorithm.parse(this.getSignatureAlgorithm()))
             .keyUse(KeyUse.SIGNATURE)
             .build();
+        log.debug("createClientJwk RSA. Kid:{} {}",rsaKey.getKeyID(),rsaKey);
+        return rsaKey;
       }
       else if ("EC".equals(clientCredential.getPublicKey().getAlgorithm())) {
-        return new ECKey.Builder(ECKey.parse(clientCredential.getCertificate()))
+        ECKey eckey = new ECKey.Builder(ECKey.parse(clientCredential.getCertificate()))
             .privateKey(clientCredential.getPrivateKey())
             .keyIDFromThumbprint()
             .algorithm(JWSAlgorithm.parse(this.getSignatureAlgorithm()))
             .keyUse(KeyUse.SIGNATURE)
             .build();
+        log.debug("createClientJwk EC. Kid:{} {}",eckey.getKeyID(),eckey);
+        return eckey;
       }
       else {
         throw new SecurityException("Unsupported key type - " + clientCredential.getPublicKey().getAlgorithm());
