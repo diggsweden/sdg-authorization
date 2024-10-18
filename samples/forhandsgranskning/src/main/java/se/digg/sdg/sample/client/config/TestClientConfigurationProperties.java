@@ -184,7 +184,6 @@ public class TestClientConfigurationProperties implements InitializingBean {
       else if ("EC".equals(clientCredential.getPublicKey().getAlgorithm())) {
         ECKey eckey = new ECKey.Builder(ECKey.parse(clientCredential.getCertificate()))
             .privateKey(clientCredential.getPrivateKey())
-            .keyIDFromThumbprint()
             .algorithm(JWSAlgorithm.parse(this.getSignatureAlgorithm()))
             .keyUse(KeyUse.SIGNATURE)
             .build();

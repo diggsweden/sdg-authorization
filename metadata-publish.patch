@@ -1,0 +1,179 @@
+diff --git a/samples/forhandsgranskning/pom.xml b/samples/forhandsgranskning/pom.xml
+index 3a93d86..98711b8 100644
+--- a/samples/forhandsgranskning/pom.xml
++++ b/samples/forhandsgranskning/pom.xml
+@@ -76,12 +76,20 @@
+       <groupId>se.oidc.nimbus</groupId>
+       <artifactId>oidc-sweden-nimbus</artifactId>
+       <version>0.9.0</version>
+-    </dependency>    
++    </dependency>
++
++    <dependency>
++      <groupId>se.digg.sdg.oidf</groupId>
++      <artifactId>oidf-spring-boot-metadata</artifactId>
++      <version>1.0.0-SNAPSHOT</version>
++    </dependency>
+ 
+     <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-web</artifactId>
+     </dependency>
++
++
+     
+     <dependency>
+       <groupId>org.springframework.boot</groupId>
+diff --git a/samples/forhandsgranskning/src/main/java/se/digg/sdg/sample/client/config/TestClientConfigurationProperties.java b/samples/forhandsgranskning/src/main/java/se/digg/sdg/sample/client/config/TestClientConfigurationProperties.java
+index 27bbc6e..4c82d5f 100644
+--- a/samples/forhandsgranskning/src/main/java/se/digg/sdg/sample/client/config/TestClientConfigurationProperties.java
++++ b/samples/forhandsgranskning/src/main/java/se/digg/sdg/sample/client/config/TestClientConfigurationProperties.java
+@@ -184,7 +184,6 @@ public class TestClientConfigurationProperties implements InitializingBean {
+       else if ("EC".equals(clientCredential.getPublicKey().getAlgorithm())) {
+         ECKey eckey = new ECKey.Builder(ECKey.parse(clientCredential.getCertificate()))
+             .privateKey(clientCredential.getPrivateKey())
+-            .keyIDFromThumbprint()
+             .algorithm(JWSAlgorithm.parse(this.getSignatureAlgorithm()))
+             .keyUse(KeyUse.SIGNATURE)
+             .build();
+diff --git a/samples/forhandsgranskning/src/main/resources/application.yml b/samples/forhandsgranskning/src/main/resources/application.yml
+index 3299638..d624083 100644
+--- a/samples/forhandsgranskning/src/main/resources/application.yml
++++ b/samples/forhandsgranskning/src/main/resources/application.yml
+@@ -1,14 +1,9 @@
+ server:
+   port: 8445
+   servlet:
+-    context-path: /client    
++    context-path: /client
+   ssl:
+-    enabled: true
+-    key-store: classpath:localhost.jks
+-    key-store-type: JKS
+-    key-alias: localhost
+-    key-store-password: secret
+-    key-password: secret
++    enabled: false
+     
+ client:  
+   client-id: https://localhost:${server.port}/client
+@@ -16,11 +11,11 @@ client:
+   authz-callback-uri: https://localhost:${server.port}/client/authzcb
+   development-mode: true
+   credential:
+-    resource: classpath:forhandsgranskning.jks
+-    alias: ec
++    resource: classpath:keystore.jks
++    alias: rsa
+     password: secret
+     type: JKS
+-  signature-algorithm: ES256  
++  signature-algorithm: RS256
+   authorization-server:
+     id: https://localhost:8443
+     authorization-endpoint: ${client.authorization-server.id}/oauth2/authorize
+@@ -38,7 +33,37 @@ client:
+     required-scopes:
+     - read
+     api-endpoint: https://localhost:8446/evidence/service2
+-  
++
++openid:
++  federation:
++    issuer: http://preview-fed.test.digg.se
++    subject: http://preview-fed.test.digg.se
++    authority-hints:
++      - https://federation.local.dev.digg.se/oidfed/sdg
++    signing-jwks:
++      - resource: classpath:sign-key.jks
++        alias: rsa
++        password: "secret"
++        type: JKS
++    federation-entity:
++      contacts: federation@contact.se
++      federation-fetch-endpoint: federation
++      homepage-uri: homepage
++      organization-name: orgName
++    relying-party:
++      scope: read openid
++      grant-types:
++        - authorization_code
++        - refresh_token
++      subject-type: pairwise
++      token-endpoint-auth-method: private_key_jwt
++      response-types:
++        - code
++      redirect-uris:
++        - "https://preview.local.dev.digg.se/client/logincb"
++        - "https://preview.local.dev.digg.se/client/authzcb"
++      client-jwks:
++        - classpath:certificate.pem
+ logging:
+   level:
+     com:
+diff --git a/samples/forhandsgranskning/src/main/resources/certificate.pem b/samples/forhandsgranskning/src/main/resources/certificate.pem
+new file mode 100644
+index 0000000..80eb4be
+--- /dev/null
++++ b/samples/forhandsgranskning/src/main/resources/certificate.pem
+@@ -0,0 +1,23 @@
++-----BEGIN CERTIFICATE-----
++MIID0TCCAjmgAwIBAgIINCvEPeHkGbwwDQYJKoZIhvcNAQEMBQAwFzEVMBMGA1UE
++AxMMdGVzdC5kaWdnLnNlMB4XDTI0MTAwNDA5NTEyM1oXDTM0MTAwMjA5NTEyM1ow
++FzEVMBMGA1UEAxMMdGVzdC5kaWdnLnNlMIIBojANBgkqhkiG9w0BAQEFAAOCAY8A
++MIIBigKCAYEA2wEJ7SF8u00OaUH0QUfzi65FfqdGG+jYUTTaiIEBaPkIKDa6AqRt
++jezzlxlNYXY4ws2jj/h2WPECuPJxXiIKa0EFkKD9HULzArng50NPzMHErIOuxn8g
++TscOSNeClrgMoMfzUhjWqlPm56kHZZSfu47/ahdmXhof/1DS6pCfWepeB9iwL6L3
++gmR8rPHTP8Xtq68dPxjmoZTsE4IrrAgzWFTgE27xiDuu3P2H+QiR/+LuAi6r0vWc
++3exQmvaayWEbKdzWEhDWVKaK9akm0NjcLk2EFeq+9cfJQdDieBU1nWNWFI8HhK1s
++jJUXeRA/ULWI8W+7oTr4hYpgWER1AkdGXy6I0VSB4+hCR9g+rjhDUx1fkSxPjRS4
++Ek0BxQMYdZCHJThVbSXLMhTixSuzi9IpsQFwLZJfHBIQ9OaqnSm/IX7dm+XKgd84
++OdMeVK3vsgR5ZICIg2ypCeJg4+ngdK176soDItTOQMjfQ/yKJETikGE5Xbwwk5UB
++AP1H4OKtXwLFAgMBAAGjITAfMB0GA1UdDgQWBBSD62nVG2tB4IJl15s+pGDLZz+A
++uDANBgkqhkiG9w0BAQwFAAOCAYEAGbeRKw2iyIgLhXWEk7AlfHdfqoDY0TPGizA0
++CKkXZtCJmmcPnZjhlAR1YD0FU52cZUf8hG+UkiLVwhysBmTECQtB+sVeS74haQqE
++wy8YQPMm/asV66haonuXXWBZPaR1FxTAzNbp7W2FRC4XBwSV2aSf71/auPTPQijM
++nlf4B8+yI0YILywCjdli9yWy8666hoCDl4UL/82iNAUvUkhtaGlXka3ylkqOh9JQ
++us0JtLuJ0duJl4HHlQOZV86S6LUrRKoqDVYAPzRIyMSNuzXKIujqtWiAKY1oFr2w
++dEAAf/lanCA3w9rUCM7CqRWmxXuiTB55Fo/dggaYibYfcGpV2I1ia0CIWlA496IE
++qCMvqAZbmU52g4U6xUQwJqLWHvhfXD5PwEUJiNmLfOmJNx015Y937Ix4zVKfEuSe
++gKR1ZJFdbIup3MpVmKZXKfuG9ZmmmNO9+WG3HuEKhkuzR0he5ZYT4D2+/tEHt5QG
++hfPuUtnDfJdvj7XG2rvRbT9Ua3xI
++-----END CERTIFICATE-----
+diff --git a/samples/forhandsgranskning/src/main/resources/keystore.jks b/samples/forhandsgranskning/src/main/resources/keystore.jks
+new file mode 100644
+index 0000000..588e36b
+Binary files /dev/null and b/samples/forhandsgranskning/src/main/resources/keystore.jks differ
+diff --git a/samples/forhandsgranskning/src/main/resources/sign-cert.pem b/samples/forhandsgranskning/src/main/resources/sign-cert.pem
+new file mode 100644
+index 0000000..a0f6893
+--- /dev/null
++++ b/samples/forhandsgranskning/src/main/resources/sign-cert.pem
+@@ -0,0 +1,23 @@
++-----BEGIN CERTIFICATE-----
++MIID0jCCAjqgAwIBAgIJAIJkDfGOo5VqMA0GCSqGSIb3DQEBDAUAMBcxFTATBgNV
++BAMTDHRlc3QuZGlnZy5zZTAeFw0yNDEwMTYwODI0NTdaFw0zNDEwMTQwODI0NTda
++MBcxFTATBgNVBAMTDHRlc3QuZGlnZy5zZTCCAaIwDQYJKoZIhvcNAQEBBQADggGP
++ADCCAYoCggGBAM9cwOHjBCPdJGMjRrnoeZ3JxyN1T+znjjTEBxbOCIA506oi1llw
++hcYYfCLjvzhUidSfT3/7BprHSC8HDDnm9c0zQXI72c6Kihm+03iuB81E3XvgBB+x
++pDzyZBur2Nhu3Tti8eggdTpnN7gqCJfSk0jFfze8kvv+AUPqsRObTZJxWEhF+Hsr
++Qb0PH7UQ0c2nWoZmwhYi2YYgSOtqkS0x+dEL6xF+KU6F+6Mm+RiT4Q3Lb168T2Qx
++nKH4V3IybsbB6IY2j+fPl6vKwiqUEUWfxYuj3X+unTGV0ynA7i2Xh3QYXz4tvuCK
++Qi2jXNKQWy5mJkpv8zZox1rVw29f1A+4RfgmFEeCXLtcPSxMeiMgASUv9Mcb8gGt
++2Rg74Vk/Uaf2ACKp8wswp2rK7qiyzcG+QigkHFBBpXu4q0iMr2cQ5phJtaqhljs4
++11jBEmHqJ3kDV8eg58qvdtT2kN9TARKuIK4IdqKy/Thr1pAczXxGvja4UI38lKy+
++wTaeOBc+gDINFwIDAQABoyEwHzAdBgNVHQ4EFgQUmE+hT1uvH3YrOeG230DgvlzL
++eLcwDQYJKoZIhvcNAQEMBQADggGBAFbBb14bNoiJvQ/9N6TZfcWvoKFJa3nxny5W
++y4Asrlv0PdpFxumaBxP/h68e65JU4fZmgputUuz/AstcLNBvmupCfqD0ZtNLIp8J
++HXaLUj3PsuCZk8rfjRO0gqqSW0oNxjCeZHGUq/sO0R/ZE4MJFGYSHFGo5ETLsZ1K
++aRtfYqKhQgvrAYj4GCCERYTSC02yijD5SVD24DE44CSWvXhkGXuiNgdxSnPZEMjq
++merm/on7GHCvgemlWHPeODR0B/RyQI54847a8fSdeLRxlcGa4HNRxV/qryyT5Eg5
++AS+S0gnB6lKpNy5rl0B2zo0F7EqUoDua6FgDGRGYhKGtPLGg7SN7xdgSAnz+rIaG
++K91T2L46ZB1ZF0zajtxG+ubAugXPRdSY9NoJJurKASnHN625cIoR1JrH+FVng3tT
++kB3aZ/ZD+OmgQTNoxPwK+AHBFpcu6h3YFTOJmNVZoq7pdtufp/PHT1OIXY9n91yJ
++nlButr2J54JEPanCuxzxu9Uc4lctKg==
++-----END CERTIFICATE-----
+diff --git a/samples/forhandsgranskning/src/main/resources/sign-key.jks b/samples/forhandsgranskning/src/main/resources/sign-key.jks
+new file mode 100644
+index 0000000..7b89f0e
+Binary files /dev/null and b/samples/forhandsgranskning/src/main/resources/sign-key.jks differ
