@@ -21,12 +21,13 @@ flowchart LR
     FGT-->BT(Bevistjänst)
 ```
 
+
 ### Auktorisationsflöde vid bevishämtning
 
 #### Beskrivning
 
 När en användare i ett svenskt online-förfarande vill hämta ett digitalt bevis från ett annat medlemsland.
-Ett svenskt online-förfarand begär ett åtkomstintyg för att kunna anropa den svenska bevisförmedlingstjänsten för 
+Ett svenskt online-förfarande begär ett åtkomstintyg för att kunna anropa den svenska bevisförmedlingstjänsten för 
 att hämta ett bevis via OOTS.
 
 #### Flödesbeskrivning
