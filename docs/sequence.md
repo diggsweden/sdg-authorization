@@ -32,7 +32,7 @@ att hämta ett bevis via OOTS.
 
 #### Flödesbeskrivning
 
-* Använderaren vill hämta ett bevis från annat medlemsland
+* Användararen vill hämta ett bevis från annat medlemsland
 * E-tjänsten skickar en signerad begäran om åtkomst till SDG Auktorisationstjänst
 * Auktorisationstjänsten validerar begäran och kontrollerar att e-tjänsten tillhör en behörig myndighet
 * Auktorisationstjänsten ställer ut ett åtkomstintyg till e-tjänsten
